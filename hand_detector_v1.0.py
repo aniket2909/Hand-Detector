@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
-from hand_detector_NN_functions_v1 import *
+from hand_detector_model import *
 
 #save all your data to aniketsNN_save.h5
 
