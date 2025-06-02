@@ -2,7 +2,7 @@ import cv2,time
 import numpy as np
 import os
 import h5py
-from aniketsNN_functions_v1 import forward_prop
+from hand_detector_NN_functions_v1 import forward_prop
 hdf = h5py.File(r'C:\Users\anike\Desktop\Deep Learning Project 1\h5_data.h5','r')
 X2 = hdf.get('data1')
 X2=np.reshape(X2,(X2.shape[0],-1)).T
