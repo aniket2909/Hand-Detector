@@ -1,4 +1,4 @@
-import numpy as np
+""" import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 from hand_detector_model import *
@@ -49,3 +49,4 @@ print(activation_functions)
 plt.plot(store1,store2)
 plt.show()
 np.save('my_dict.npy',  parameters) 
+ """

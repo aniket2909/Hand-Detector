@@ -1,4 +1,4 @@
-import numpy as np
+""" import numpy as np
 
 ######################################################################################
 
@@ -66,3 +66,4 @@ def backward_prop(dA_final,caches,activation_functions):
 		grads['W'+str(i+1)] = dW
 		grads['b'+str(i+1)] = db
 	return grads	
+ """

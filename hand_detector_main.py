@@ -1,69 +1,88 @@
-import cv2,time
-import numpy as np
+import cv2
+import mediapipe as mp
+import webbrowser
 import os
-import h5py
-from hand_detector_model import forward_prop
-hdf = h5py.File(r'C:\Users\anike\Desktop\Deep Learning Project 1\h5_data.h5','r')
-X2 = hdf.get('data1')
-X2=np.reshape(X2,(X2.shape[0],-1)).T
 
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(max_num_hands=1, min_detection_confidence=0.7)
+mp_draw = mp.solutions.drawing_utils
 
+chrome_open = False
 
+ # remembering last action so that chrome does not keep opening more tabs as the hand keeps being detected by the camera
+last_action = None
 
-activation_function = ['relu', 'relu', 'sigmoid']
+def fingers_up(hand_landmarks):
+    tips = [8, 12, 16, 20]
+    fingers = []
 
-my_dict_back = np.load('my_dict.npy')
-print(my_dict_back.item().keys())    
-# print(my_dict_back.item().get('W1'))
-parameters = {}
-for i in my_dict_back.item().keys():
-	parameters[i] = my_dict_back.item().get(i)
+	# for recognizing fingers from the landmarks + when they open and close
+    for tip in tips:
+        # open palm
+        if hand_landmarks.landmark[tip].y < hand_landmarks.landmark[tip - 2].y:
+            fingers.append(1)
+            
+        #closed palm
+        else:
+            fingers.append(0)
+    return fingers
 
-filepath = r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+# function to open chrome upon detecting open palm
+def open_chrome():
+    global chrome_open
+    if not chrome_open:
+        webbrowser.open("https://www.google.com")
+        chrome_open = True
 
+# function to close chrome on detecting closed palm / fist
+def close_chrome():
+    global chrome_open
+    if chrome_open:
+        os.system("taskkill /F /IM chrome.exe")
+        chrome_open = False
 
+cap = cv2.VideoCapture(0)
 
-video = cv2.VideoCapture(0,cv2.CAP_DSHOW)
-a=0
-flag = 0
-t1=time.time()
-while True :
-	# os.system()
-	time.sleep(0.1)
-	a+=1
-	check, frame = video.read()
-	frame=cv2.resize(frame, (64,64))
-	X = np.resize(frame,(12288,1))
-	X = (X-np.mean(X2, axis = 1, keepdims = True))/np.var(X2,axis = 1,keepdims=True)
+while True:
+    success, img = cap.read()
+    if not success:
+        break
 
-	A_final,caches = forward_prop(parameters,X,activation_function)
+    img = cv2.flip(img, 1)
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    results = hands.process(img_rgb)
 
-	if np.sum(A_final)>0.5:
-		if flag == 0:
-			os.startfile(filepath)
-			time.sleep(2.2) 
-			flag = 1
-			A_final=0
-		elif flag==1:
-			os.system('taskkill /IM chrome.exe')
-			time.sleep(2.2) 
-			flag = 0			
-			A_final=0
-		X=np.zeros(X.shape)	
+    gesture_text = "No Gesture"
 
-	print(A_final)
-	#gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-	
-	cv2.imshow("capturing you",frame)
-	
-	#key = cv2.wait(1)
+    if results.multi_hand_landmarks:
+        hand_landmarks = results.multi_hand_landmarks[0]
+        mp_draw.draw_landmarks(img, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+        fingers = fingers_up(hand_landmarks)
+        total_fingers = sum(fingers)
 
-	if cv2.waitKey(1)  & 0xFF == ord('q'):
-		break;
-	if a==100:
-		t2=time.time()
-		print('fps : ' + str(100/(t2-t1)))
+		# excluding the thumb in total_fingers as it hindered the recognition of left hand
+        if total_fingers == 4:
+            detected_gesture = "Open Palm"
+            if detected_gesture != last_action:
+                open_chrome()
+                last_action = detected_gesture
+        elif total_fingers == 0:
+            detected_gesture = "Closed Palm"
+            if detected_gesture != last_action:
+                close_chrome()
+                last_action = detected_gesture
+        else:
+            detected_gesture = "Unknown"
 
-video.release()
+        gesture_text = detected_gesture
+    else:
+        last_action = None  # if no hand detected
 
-cv2.destroyAllWindows
+    cv2.putText(img, f"Gesture: {gesture_text}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.imshow("Hand Gesture Control", img)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
