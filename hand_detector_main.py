@@ -16,13 +16,12 @@ def fingers_up(hand_landmarks):
     tips = [8, 12, 16, 20]
     fingers = []
 
-	# for recognizing fingers from the landmarks + when they open and close
+    # for recognizing fingers from the landmarks + when they open and close
     for tip in tips:
-        # open palm
+	    # finger up
         if hand_landmarks.landmark[tip].y < hand_landmarks.landmark[tip - 2].y:
             fingers.append(1)
-            
-        #closed palm
+	# finger down
         else:
             fingers.append(0)
     return fingers
@@ -60,7 +59,7 @@ while True:
         fingers = fingers_up(hand_landmarks)
         total_fingers = sum(fingers)
 
-		# excluding the thumb in total_fingers as it hindered the recognition of left hand
+	# excluding the thumb in total_fingers as it hindered the recognition of left hand
         if total_fingers == 4:
             detected_gesture = "Open Palm"
             if detected_gesture != last_action:
